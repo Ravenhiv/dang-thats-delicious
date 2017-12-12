@@ -16,7 +16,6 @@ const multerOptions = {
   } 
 }
 
-
 exports.homePage = (req, res) => {
   res.render('index')
 }
@@ -70,4 +69,21 @@ exports.updateStore = async (req, res) => {
     `Sucessfully updated <strong>${store.name}</strong>. <a href="/stores/${store.slug}">View Store</a>`
   )
   res.redirect(`/stores/${store.id}/edit`)
+}
+
+exports.getStoreBySlug = async (req, res, next) => {
+  const store = await Store.findOne({ slug: req.params.slug })
+  if (!store) return next()
+  res.render('store', { store, title: store.name })
+}
+
+exports.getStoresByTag = async (req, res) => {
+  const tag = req.params.tag
+  // if there is no tag, just give me any store that has a tag property on it
+  const tagQuery = tag || { $exists: true }
+  const tagsPromise = Store.getTagsList()
+  const storePromise = Store.find({ tags: tagQuery })
+  // no need to wait every single promise. need to wait them all together
+  const [tags, stores] = await Promise.all([tagsPromise, storePromise])
+  res.render('tag', { tags, title: 'Tags', tag, stores })
 }
